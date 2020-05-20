@@ -1,0 +1,33 @@
+version: "2"
+
+services:
+    postgres:
+        image: postgres:11.4
+        mem_limit: 512m
+        environment:
+            - POSTGRES_PASSWORD=alfresco
+            - POSTGRES_USER=alfresco
+            - POSTGRES_DB=alfresco
+        command: postgres -c max_connections=300 -c log_min_messages=LOG
+        ports:
+            - 5433:5432
+        volumes:
+            - ./data/postgres:/var/lib/postgresql/data
+            - ./docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
+
+    auth:
+        image: quay.io/alfresco/alfresco-identity-service:1.2
+        environment:
+          KEYCLOAK_USER: admin
+          KEYCLOAK_PASSWORD: admin
+          # KEYCLOAK_IMPORT: alfresco-realm.json
+          DB_VENDOR: postgres
+          DB_ADDR: "postgres:5432"
+          DB_DATABASE: keycloak
+          DB_USER: alfresco
+          DB_PASSWORD: alfresco
+          JAVA_OPTS: "-Djboss.socket.binding.port-offset=808 -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true"
+        ports:
+          - 8888:8888
+        depends_on:
+          - postgres
