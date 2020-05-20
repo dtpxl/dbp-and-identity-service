@@ -1,6 +1,11 @@
 # Alfresco Digital Business Platform (DBP) integration with Alfresco Identity Service (i.e. Keycloak)
 This project is the source code for the "Deploying Alfresco DBP with Identity Service using Docker Compose" article.
 
+Product versions used:
+* **Alfresco Content Services (ACS)**: 6.2
+* **Alfresco Process Services (APS)**. 1.11
+* **Alfresco Identity Service**: 1.2
+
 It shows how to enable Single Sign On (SSO) for ACS, APS, and ADF applications.
 It also shows how to connect Alfresco Identity Service (Keycloak) to an external directory server (LDAP).
 
