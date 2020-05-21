@@ -224,6 +224,11 @@ services:
             - share
         ports:
             - 8080:8080
+        environment:
+    #     ADW_URL: "http://digital-workspace"
+    #     REPO_URL: "http://alfresco:8080"
+    #     SHARE_URL: "http://share:8080"
+            SYNCSERVICE_URL: ""
 
 volumes:
     shared-file-store-volume:
