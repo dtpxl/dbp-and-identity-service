@@ -149,6 +149,7 @@ services:
                 -Dtransform.misc.url=http://transform-misc:8090/
                 -Dcsrf.filter.enabled=false
                 -DtrialUid=id10288029
+                -Dsync.mode=OFF
                 -Xms1500m
                 -Xmx1500m
                 "
