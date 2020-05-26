@@ -102,6 +102,7 @@ services:
           - ./aps/transform.lic:/usr/share/tomcat/lib/transform.lic
           - ./aps/activiti-app.properties:/usr/share/tomcat/lib/activiti-app.properties
 #          - ./aps/activiti-identity-service.properties:/usr/local/tomcat/lib/activiti-identity-service.properties
+#          - ./aps/activiti-ldap.properties:/usr/local/tomcat/lib/activiti-ldap.properties
           - ./aps/log4j.properties:/usr/share/tomcat/webapps/activiti-app/WEB-INF/classes/log4j.properties
           - ./data/aps:/usr/local/data/
         ports:
