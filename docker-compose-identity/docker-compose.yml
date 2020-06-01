@@ -1,19 +1,22 @@
 version: "2"
 
 services:
+
+    # Custom built postgres image with the following databases: acs, aps, and keycloak
     postgres:
-        image: postgres:11.4
+        container_name: postgres_custom
+        build:
+            context: ./postgres
+            dockerfile: Dockerfile
+        image: postgres_custom:development
         mem_limit: 512m
         environment:
-            - POSTGRES_PASSWORD=alfresco
-            - POSTGRES_USER=alfresco
-            - POSTGRES_DB=alfresco
+            - PGDATA=/var/lib/postgresql/data/pgdata
         command: postgres -c max_connections=300 -c log_min_messages=LOG
         ports:
             - 5433:5432
         volumes:
-            - ./data/postgres:/var/lib/postgresql/data
-            - ./docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
+            - ./data/postgres:/var/lib/postgresql
 
     auth:
         image: quay.io/alfresco/alfresco-identity-service:1.2

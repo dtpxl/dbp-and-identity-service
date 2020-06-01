@@ -1,19 +1,6 @@
 version: "2"
 
 services:
-    postgres:
-        image: postgres:11.4
-        mem_limit: 512m
-        environment:
-            - POSTGRES_PASSWORD=alfresco
-            - POSTGRES_USER=alfresco
-            - POSTGRES_DB=alfresco
-        command: postgres -c max_connections=300 -c log_min_messages=LOG
-        ports:
-            - 5432:5432
-        volumes:
-            - ./data/postgres:/var/lib/postgresql/data
-            - ./docker-postgresql-multiple-databases:/docker-entrypoint-initdb.d
 
     transform-router:
         mem_limit: 512m
@@ -91,7 +78,7 @@ services:
           ACTIVITI_DATASOURCE_PASSWORD: alfresco
           ACTIVITI_DATASOURCE_DRIVER: org.postgresql.Driver
           ACTIVITI_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-          ACTIVITI_DATASOURCE_URL: 'jdbc:postgresql://postgres:5432/activiti?characterEncoding=UTF-8'
+          ACTIVITI_DATASOURCE_URL: 'jdbc:postgresql://postgres:5432/aps?characterEncoding=UTF-8'
           ACTIVITI_CSRF_DISABLED: 'true'
           ACTIVITI_CORS_ENABLED: 'true'
           ACTIVITI_ES_SERVER_TYPE: client
@@ -110,7 +97,6 @@ services:
           - 5006:5005 # Remote Debug
         depends_on:
           - elasticsearch
-          - postgres
 
     alfresco:
         image: alfresco/alfresco-content-repository:6.2.0.2
@@ -120,7 +106,7 @@ services:
                 -Ddb.driver=org.postgresql.Driver
                 -Ddb.username=alfresco
                 -Ddb.password=alfresco
-                -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                -Ddb.url=jdbc:postgresql://postgres:5432/acs
                 -Dsolr.host=solr6
                 -Dsolr.port=8983
                 -Dsolr.secureComms=none
@@ -161,7 +147,6 @@ services:
           - ./acs/license:/usr/local/tomcat/shared/classes/alfresco/extension/license
         depends_on:
           - solr6
-          - postgres
         ports:
           - 8082:8080 # Need a separate port mapping for this so we can talk directly from inside APS
 
@@ -237,3 +222,9 @@ volumes:
         driver_opts:
             type: tmpfs
             device: tmpfs
+
+# Let all containers join the default docker network created by the docker-compose-identity/docker-compose.yml file
+networks:
+    default:
+        external:
+            name: docker-compose-identity_default
