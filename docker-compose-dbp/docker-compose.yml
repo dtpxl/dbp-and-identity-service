@@ -2,75 +2,168 @@ version: "2"
 
 services:
 
-    transform-router:
-        mem_limit: 512m
-        image: quay.io/alfresco/alfresco-transform-router:1.1.1
+########################################################################################################################
+###   Alfresco Content Services (ACS)
+########################################################################################################################
+
+   alfresco:
+        image: alfresco/alfresco-content-repository:6.2.1
+        mem_limit: 1700m
         environment:
-            JAVA_OPTS: " -Xms256m -Xmx512m"
-            ACTIVEMQ_URL: "nio://activemq:61616"
-            IMAGEMAGICK_URL: "http://imagemagick:8090"
-            PDF_RENDERER_URL: "http://alfresco-pdf-renderer:8090"
-            LIBREOFFICE_URL: "http://libreoffice:8090"
-            TIKA_URL: "http://tika:8090"
-            MISC_URL: "http://transform-misc:8090"
-            FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
+            JAVA_OPTS: "
+                -Ddb.driver=org.postgresql.Driver
+                -Ddb.username=alfresco
+                -Ddb.password=alfresco
+                -Ddb.url=jdbc:postgresql://postgres:5432/acs
+                -Dsolr.host=solr6
+                -Dsolr.port=8983
+                -Dsolr.secureComms=none
+                -Dsolr.base.url=/solr
+                -Dindex.subsystem.name=solr6
+                -Dshare.host=127.0.0.1
+                -Dshare.port=8080
+                -Dalfresco.host=localhost
+                -Dalfresco.port=8080
+                -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+                -Dmessaging.broker.url=\"failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true\"
+                -Ddeployment.method=DOCKER_COMPOSE
+                -Dmetadata-keystore.password=mp6yc0UD9e
+                -Dmetadata-keystore.aliases=metadata
+                -Dmetadata-keystore.metadata.password=mp6yc0UD9e
+                -Dmetadata-keystore.metadata.algorithm=AES
+                -Dtransform.service.enabled=true
+                -Dtransform.service.url=http://transform-router:8095
+                -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+                -Dalfresco-pdf-renderer.url=http://transform-core-aio:8090/
+                -Djodconverter.url=http://transform-core-aio:8090/
+                -Dimg.url=http://transform-core-aio:8090/
+                -Dtika.url=http://transform-core-aio:8090/
+                -Dtransform.misc.url=http://transform-core-aio:8090/
+                -Dsfs.url=http://shared-file-store:8099/
+                -Dcsrf.filter.enabled=false
+                -Dsync.mode=OFF
+                -Xms1500m
+                -Xmx1500m
+                "
+        volumes:
+          - ./data/acs:/usr/local/tomcat/alf_data/
+#          - ./acs/alfresco-global.properties:/usr/local/tomcat/shared/classes/alfresco-global.properties
+#          - ./acs/log4j.properties:/usr/local/tomcat/webapps/alfresco/WEB-INF/classes/log4j.properties
+          - ./acs/license:/usr/local/tomcat/shared/classes/alfresco/extension/license
+        depends_on:
+          - solr6
+        ports:
+          - 8082:8080 # Need a separate port mapping for this so we can talk directly from inside APS
+
+   transform-router:
+        mem_limit: 512m
+        image: quay.io/alfresco/alfresco-transform-router:1.2.0
+        environment:
+          JAVA_OPTS: " -Xms256m -Xmx512m"
+          ACTIVEMQ_URL: "nio://activemq:61616"
+          CORE_AIO_URL : "http://transform-core-aio:8090"
+          FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
         ports:
             - 8095:8095
+        links:
+          - activemq
 
-    alfresco-pdf-renderer:
-        image: alfresco/alfresco-pdf-renderer:2.1.1
-        mem_limit: 1g
+   transform-core-aio:
+        image: alfresco/alfresco-transform-core-aio:2.2.1
+        mem_limit: 1536m
         environment:
-            JAVA_OPTS: " -Xms256m -Xmx512m"
+            JAVA_OPTS: " -Xms256m -Xmx1536m"
             ACTIVEMQ_URL: "nio://activemq:61616"
             FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
         ports:
             - 8090:8090
+        links:
+        - activemq
 
-    imagemagick:
-        image: alfresco/alfresco-imagemagick:2.1.1
-        mem_limit: 1g
+
+   shared-file-store:
+        image: alfresco/alfresco-shared-file-store:0.7.0
+        mem_limit: 512m
         environment:
             JAVA_OPTS: " -Xms256m -Xmx512m"
-            ACTIVEMQ_URL: "nio://activemq:61616"
-            FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
+            scheduler.content.age.millis: 86400000
+            scheduler.cleanup.interval: 86400000
         ports:
-            - 8091:8090
+            - 8099:8099
+        volumes:
+            - shared-file-store-volume:/tmp/Alfresco/sfs
 
-    libreoffice:
-        image: alfresco/alfresco-libreoffice:2.1.1
+   share:
+        image: alfresco/alfresco-share:6.2.1
         mem_limit: 1g
         environment:
-            JAVA_OPTS: " -Xms256m -Xmx512m"
-            ACTIVEMQ_URL: "nio://activemq:61616"
-            FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
-        ports:
-            - 8092:8090
+            REPO_HOST: "alfresco"
+            REPO_PORT: "8080"
+            JAVA_OPTS: "
+                -Xms500m
+                -Xmx500m
+                -Dalfresco.host=localhost
+                -Dalfresco.port=8080
+                -Dalfresco.context=alfresco
+                -Dalfresco.protocol=http
+                "
 
-    tika:
-        image: alfresco/alfresco-tika:2.1.1
-        mem_limit: 1g
+   solr6:
+        image: alfresco/alfresco-search-services:1.4.2
+        mem_limit: 2g
         environment:
-            JAVA_OPTS: " -Xms256m -Xmx512m"
-            ACTIVEMQ_URL: "nio://activemq:61616"
-            FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
+            #Solr needs to know how to register itself with Alfresco
+            - SOLR_ALFRESCO_HOST=alfresco
+            - SOLR_ALFRESCO_PORT=8080
+            #Alfresco needs to know how to call solr
+            - SOLR_SOLR_HOST=solr6
+            - SOLR_SOLR_PORT=8983
+            #Create the default alfresco and archive cores
+            - SOLR_CREATE_ALFRESCO_DEFAULTS=alfresco,archive
+            #HTTP by default
+            - ALFRESCO_SECURE_COMMS=none
+            - "SOLR_JAVA_MEM=-Xms2g -Xmx2g"
         ports:
-            - 8093:8090
+            - 8083:8983 #Browser port
 
-    transform-misc:
-        image: alfresco/alfresco-transform-misc:2.1.1
+   activemq:
+        image: alfresco/alfresco-activemq:5.15.8
         mem_limit: 1g
-        environment:
-            JAVA_OPTS: " -Xms256m -Xmx512m"
-            ACTIVEMQ_URL: "nio://activemq:61616"
-            FILE_STORE_URL: "http://shared-file-store:8099/alfresco/api/-default-/private/sfs/versions/1/file"
         ports:
-            - 8094:8090
+            - 8161:8161 # Web Console
+            - 5672:5672 # AMQP
+            - 61616:61616 # OpenWire
+            - 61613:61613 # STOMP
 
-    elasticsearch:
-        image: elasticsearch:1.7.3
+   digital-workspace:
+        image: quay.io/alfresco/alfresco-digital-workspace:1.5.0
+        mem_limit: 128m
+        environment:
+            BASE_PATH: ./
 
-    process:
+   proxy:
+        image: alfresco/alfresco-acs-nginx:3.0.1
+        mem_limit: 128m
+        depends_on:
+            - alfresco
+            - digital-workspace
+        ports:
+            - 8080:8080
+        links:
+            - digital-workspace
+            - alfresco
+            - share
+        environment:
+    #     ADW_URL: "http://digital-workspace"
+    #     REPO_URL: "http://alfresco:8080"
+    #     SHARE_URL: "http://share:8080"
+            SYNCSERVICE_URL: ""
+
+########################################################################################################################
+###   Alfresco Process Services (APS)
+########################################################################################################################
+
+   process:
         image: alfresco/process-services:1.11.0
         environment:
           CATALINA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
@@ -98,125 +191,10 @@ services:
         depends_on:
           - elasticsearch
 
-    alfresco:
-        image: alfresco/alfresco-content-repository:6.2.0.2
-        mem_limit: 1700m
-        environment:
-            JAVA_OPTS: "
-                -Ddb.driver=org.postgresql.Driver
-                -Ddb.username=alfresco
-                -Ddb.password=alfresco
-                -Ddb.url=jdbc:postgresql://postgres:5432/acs
-                -Dsolr.host=solr6
-                -Dsolr.port=8983
-                -Dsolr.secureComms=none
-                -Dsolr.base.url=/solr
-                -Dindex.subsystem.name=solr6
-                -Dshare.host=127.0.0.1
-                -Dshare.port=8080
-                -Dalfresco.host=localhost
-                -Dalfresco.port=8080
-                -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
-                -Dmessaging.broker.url=\"failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true\"
-                -Ddeployment.method=DOCKER_COMPOSE
-                -Dtransform.service.enabled=true
-                -Dtransform.service.url=http://transform-router:8095
-                -Dsfs.url=http://shared-file-store:8099/
-                -Dlocal.transform.service.enabled=true
-                -DlocalTransform.pdfrenderer.url=http://alfresco-pdf-renderer:8090/
-                -DlocalTransform.imagemagick.url=http://imagemagick:8090/
-                -DlocalTransform.libreoffice.url=http://libreoffice:8090/
-                -DlocalTransform.tika.url=http://tika:8090/
-                -DlocalTransform.misc.url=http://transform-misc:8090/
-                -Dlegacy.transform.service.enabled=true
-                -Dalfresco-pdf-renderer.url=http://alfresco-pdf-renderer:8090/
-                -Djodconverter.url=http://libreoffice:8090/
-                -Dimg.url=http://imagemagick:8090/
-                -Dtika.url=http://tika:8090/
-                -Dtransform.misc.url=http://transform-misc:8090/
-                -Dcsrf.filter.enabled=false
-                -DtrialUid=id10288029
-                -Dsync.mode=OFF
-                -Xms1500m
-                -Xmx1500m
-                "
-        volumes:
-          - ./data/acs:/usr/local/tomcat/alf_data/
-#          - ./acs/alfresco-global.properties:/usr/local/tomcat/shared/classes/alfresco-global.properties
-#          - ./acs/log4j.properties:/usr/local/tomcat/webapps/alfresco/WEB-INF/classes/log4j.properties
-          - ./acs/license:/usr/local/tomcat/shared/classes/alfresco/extension/license
-        depends_on:
-          - solr6
-        ports:
-          - 8082:8080 # Need a separate port mapping for this so we can talk directly from inside APS
+   elasticsearch:
+        image: elasticsearch:1.7.3
 
-    solr6:
-        image: alfresco/alfresco-search-services:1.4.0
-        mem_limit: 2g
-        environment:
-            - SOLR_ALFRESCO_HOST=alfresco
-            - SOLR_ALFRESCO_PORT=8080
-            - SOLR_SOLR_HOST=solr6
-            - SOLR_SOLR_PORT=8983
-            - SOLR_CREATE_ALFRESCO_DEFAULTS=alfresco,archive
-            - ALFRESCO_SECURE_COMMS=none
-            - "SOLR_JAVA_MEM=-Xms2g -Xmx2g"
-        volumes:
-            - ./data/solr/contentstore:/opt/alfresco-search-services/contentstore/
-            - ./data/solr/data:/opt/alfresco-search-services/data/
-        ports:
-            - 8083:8983 #Browser port
-
-    share:
-        image: alfresco/alfresco-share:6.2.0
-        mem_limit: 1g
-        environment:
-            REPO_HOST: "alfresco"
-            REPO_PORT: "8080"
-            JAVA_OPTS: " -Xms500m -Xmx500m -Dalfresco.host=localhost -Dalfresco.port=8080 -Dalfresco.context=alfresco -Dalfresco.protocol=http "
-
-    shared-file-store:
-        image: alfresco/alfresco-shared-file-store:0.5.3
-        mem_limit: 512m
-        environment:
-            JAVA_OPTS: " -Xms256m -Xmx512m"
-            scheduler.content.age.millis: 86400000
-            scheduler.cleanup.interval: 86400000
-        ports:
-            - 8099:8099
-        volumes:
-            - shared-file-store-volume:/tmp/Alfresco/sfs
-
-    activemq:
-        image: alfresco/alfresco-activemq:5.15.8
-        mem_limit: 1g
-        ports:
-            - 8161:8161 # Web Console
-            - 5672:5672 # AMQP
-            - 61616:61616 # OpenWire
-            - 61613:61613 # STOMP
-
-    digital-workspace:
-        image: quay.io/alfresco/alfresco-digital-workspace:1.4.0
-        mem_limit: 128m
-        environment:
-            BASE_PATH: ./
-
-    proxy:
-        image: alfresco/alfresco-acs-nginx:3.0.1
-        mem_limit: 128m
-        depends_on:
-            - alfresco
-            - digital-workspace
-            - share
-        ports:
-            - 8080:8080
-        environment:
-    #     ADW_URL: "http://digital-workspace"
-    #     REPO_URL: "http://alfresco:8080"
-    #     SHARE_URL: "http://share:8080"
-            SYNCSERVICE_URL: ""
-
+# Docker Volumes for ACS
 volumes:
     shared-file-store-volume:
         driver_opts:
