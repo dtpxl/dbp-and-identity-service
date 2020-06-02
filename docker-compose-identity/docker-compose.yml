@@ -10,13 +10,11 @@ services:
             dockerfile: Dockerfile
         image: postgres_custom:development
         mem_limit: 512m
-        environment:
-            - PGDATA=/var/lib/postgresql/data/pgdata
         command: postgres -c max_connections=300 -c log_min_messages=LOG
         ports:
             - 5433:5432
         volumes:
-            - ./data/postgres:/var/lib/postgresql/data
+            - pgdata:/var/lib/postgresql/data
 
     auth:
         image: quay.io/alfresco/alfresco-identity-service:1.2
@@ -45,3 +43,7 @@ services:
 #        volumes:
 #          - ./data/ldap/data:/data
 #          - ./ldap/bootstrap:/bootstrap
+
+# We need a named Docker Volume instead of local mapping, which does not work on Windows
+volumes:
+  pgdata:
