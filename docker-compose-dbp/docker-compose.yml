@@ -151,7 +151,7 @@ services:
         environment:
             JAVA_OPTS : "
             -Dsql.db.driver=org.postgresql.Driver
-            -Dsql.db.url=jdbc:postgresql://postgres:5432/alfresco
+            -Dsql.db.url=jdbc:postgresql://postgres:5432/acs
             -Dsql.db.username=alfresco
             -Dsql.db.password=alfresco
             -Dmessaging.broker.host=activemq
@@ -162,7 +162,7 @@ services:
             "
         ports:
             - 9090:9090
-            
+
 ########################################################################################################################
 ###   Alfresco Process Services (APS)
 ########################################################################################################################
