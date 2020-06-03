@@ -9,7 +9,6 @@ services:
             context: ./postgres
             dockerfile: Dockerfile
         image: postgres_custom:development
-        mem_limit: 512m
         command: postgres -c max_connections=300 -c log_min_messages=LOG
         ports:
             - 5433:5432
