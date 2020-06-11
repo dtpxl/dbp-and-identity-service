@@ -183,11 +183,11 @@ services:
           ACTIVITI_ES_CLUSTER_NAME: elasticsearch
         volumes:
           - ./aps/enterprise-license:/root/.activiti/enterprise-license/:ro
-          - ./aps/transform.lic:/usr/share/tomcat/lib/transform.lic
-          - ./aps/activiti-app.properties:/usr/share/tomcat/lib/activiti-app.properties
+          - ./aps/transform.lic:/usr/local/tomcat/lib/transform.lic
+          - ./aps/activiti-app.properties:/usr/local/tomcat/lib/activiti-app.properties
 #          - ./aps/activiti-identity-service.properties:/usr/local/tomcat/lib/activiti-identity-service.properties
 #          - ./aps/activiti-ldap.properties:/usr/local/tomcat/lib/activiti-ldap.properties
-          - ./aps/log4j.properties:/usr/share/tomcat/webapps/activiti-app/WEB-INF/classes/log4j.properties
+          - ./aps/log4j.properties:/usr/local/tomcat/webapps/activiti-app/WEB-INF/classes/log4j.properties
           - ./data/aps:/usr/local/data/
         ports:
           - 9080:8080 # Browser port
